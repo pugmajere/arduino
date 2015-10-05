@@ -86,7 +86,7 @@ byte SetStep(byte target, byte last) {
 uint32_t color_index = 0;
 uint32_t colors[][3] = {{0, 0, 0},
                         {64, 0, 0},
-                        {0, 64, 0},
+                        {48, 16, 0},
                         {0, 0, 64}};
 
 void pickNextColor() {
@@ -94,7 +94,7 @@ void pickNextColor() {
   last_g = current_g;
   last_b = current_b;
 
-  color_index = (color_index + 1) % 4;
+  color_index = (color_index + 1) % 5;
 
   target_r = colors[color_index][0];
   target_g = colors[color_index][1];
