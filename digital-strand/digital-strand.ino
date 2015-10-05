@@ -48,43 +48,130 @@ boolean interval_decreasing = true;
 long interval_factor = 2;
 
 // State for the strip:
-long strip_interval = 1000; // Time between LED activations.
+long strip_interval = 10; // Time between LED activations.
 long strip_last_change_millis = 0;
-boolean strip_ascend = true;
 uint32_t pixel = 0; // Pixel to act on.
 uint32_t color = 0;
+uint32_t target_color = 0;
 
-byte color_min = 0;
-byte color_max = 128;
+const byte kColor_min = 0;
+const byte kColor_max = 64;
 
 
 void pickRandomColor() {
   byte r, g, b;
-  r = random(color_min, color_max);
-  g = random(color_min, color_max);
-  b = random(color_min, color_max);
-  color = strip.Color(r, g, b);
+  r = random(kColor_min, kColor_max);
+  g = random(kColor_min, kColor_max);
+  b = random(kColor_min, kColor_max);
+  target_color = strip.Color(r, g, b);
 }
 
+byte last_r, last_g, last_b = 0;
+byte current_r, current_g, current_b = 0;
+byte target_r, target_g, target_b = 0;
+byte step_r, step_g, step_b = 0;
+
+byte SetStep(byte target, byte last) {
+  byte step = (target - last) / 16;
+  if (step == 0) {
+    if (target > last) {
+      step = 1;
+    } else {
+      step = -1;
+    }
+  }
+  return step;
+}
+
+uint32_t color_index = 0;
+
+// std::vector<std::tuple<byte, byte, byte> > colors;
+
+void pickNextColor() {
+  last_r = current_r;
+  last_g = current_g;
+  last_b = current_b;
+  
+  if (last_r == kColor_max) {
+    target_r = kColor_min;
+    target_g = kColor_max;
+    target_b = kColor_min;
+  } else if (last_g == kColor_max) {
+    target_r = kColor_min;
+    target_g = kColor_min;
+    target_b = kColor_max;
+  } else if (last_b == kColor_max) {
+    target_r = kColor_max;
+    target_g = kColor_min;
+    target_b = kColor_min;
+  } else {
+    target_r = kColor_max;
+  }
+
+  step_r = SetStep(target_r, last_r);
+  step_g = SetStep(target_g, last_g);
+  step_b = SetStep(target_b, last_b);
+}
+
+byte MoveToTarget(byte current, byte target, byte step) {
+  bool greater = (current > target);
+  byte future = (current + step);
+
+  if (greater) {
+    if (future > current || current < target) {
+      future = target;
+    }
+  } else {
+    if (future < current || future > target) {
+      future = target;
+    }
+  }
+  return future;
+}
+
+uint32_t GetIntermediateColor(uint32_t target, uint32_t current) {
+  current_r = MoveToTarget(current_r, target_r, step_r);
+  current_g = MoveToTarget(current_g, target_g, step_g);
+  current_b = MoveToTarget(current_b, target_b, step_b);
+
+  return strip.Color(current_r, current_g, current_b);
+}
+
+bool CheckAtTarget() {
+  return (current_r == target_r
+          && current_g == target_g
+          && current_b == target_b);
+}
+ 
 
 void setup() {
 #if defined(__AVR_ATtiny85__) && (F_CPU == 16000000L)
   clock_prescale_set(clock_div_1); // Enable 16 MHz on Trinket
 #endif
 
-  // Start up the LED strip
-  strip.begin();
-
-  // Update the strip, to start they are all 'off'
-  strip.show();
-
   // set the digital pin as output:
   pinMode(ledPin, OUTPUT);
 
+  // Start up the LED strip
+  strip.begin();
+  // Update the strip, to start they are all 'off'
+  strip.show();
+
   randomSeed(0);
+  pickNextColor();
+  // pickRandomColor();
 
-  pickRandomColor();
+  for (pixel = 0; pixel < strip.numPixels(); pixel++) {
+    strip.setPixelColor(pixel, target_color);
+  }
+  strip.show();
 
+  color = target_color;
+  // pickRandomColor();
+  pickNextColor();
+  color = GetIntermediateColor(target_color, color);
+  
+  pixel = 0;
 }
 
 
@@ -131,23 +218,17 @@ void loop() {
     strip.setPixelColor(pixel, color);
     strip.show();
 
-    switch(strip_ascend)
-      {
-      case false:
-        pixel -= 1;
-        if (pixel == 0) {
-          strip_ascend = true;
-          pickRandomColor();
-        }
-        break;
-      case true:
-        pixel += 1;
-        if (pixel == strip.numPixels()) {
-          strip_ascend = false;
-          pickRandomColor();
-        }
-        break;
+    pixel += 1;
+    if (pixel == strip.numPixels()) {
+      pixel = 0;
+      uint32_t this_color = strip.getPixelColor(pixel);
+      color = GetIntermediateColor(target_color, this_color);
+
+      if (CheckAtTarget()) {
+        pickNextColor();
+        // pickRandomColor();
       }
+    }
   }
 }
 
