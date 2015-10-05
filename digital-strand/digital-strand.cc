@@ -84,29 +84,21 @@ byte SetStep(byte target, byte last) {
 }
 
 uint32_t color_index = 0;
-
-// std::vector<std::tuple<byte, byte, byte> > colors;
+uint32_t colors[][3] = {{0, 0, 0},
+                        {64, 0, 0},
+                        {0, 64, 0},
+                        {0, 0, 64}};
 
 void pickNextColor() {
   last_r = current_r;
   last_g = current_g;
   last_b = current_b;
-  
-  if (last_r == kColor_max) {
-    target_r = kColor_min;
-    target_g = kColor_max;
-    target_b = kColor_min;
-  } else if (last_g == kColor_max) {
-    target_r = kColor_min;
-    target_g = kColor_min;
-    target_b = kColor_max;
-  } else if (last_b == kColor_max) {
-    target_r = kColor_max;
-    target_g = kColor_min;
-    target_b = kColor_min;
-  } else {
-    target_r = kColor_max;
-  }
+
+  color_index = (color_index + 1) % 4;
+
+  target_r = colors[color_index][0];
+  target_g = colors[color_index][1];
+  target_b = colors[color_index][2];
 
   step_r = SetStep(target_r, last_r);
   step_g = SetStep(target_g, last_g);
