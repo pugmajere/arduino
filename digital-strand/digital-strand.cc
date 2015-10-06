@@ -94,7 +94,7 @@ void pickNextColor() {
   last_g = current_g;
   last_b = current_b;
 
-  color_index = (color_index + 1) % 5;
+  color_index = (color_index + 1) % 4;
 
   target_r = colors[color_index][0];
   target_g = colors[color_index][1];
