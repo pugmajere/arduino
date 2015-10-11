@@ -29,9 +29,7 @@ public:
   };
 
   void SetColorPair(short colornum) {
-    if (red_ | green_ | blue_)
-      printw("%03d %03d %03d", red_, green_, blue_);
-    init_color(colornum, red_, green_, blue_);
+    init_color(colornum, red_ * 10, green_ * 10, blue_ * 10);
     init_pair(colornum, colornum, 0);
   }
 
@@ -116,9 +114,6 @@ uint32_t pixel = 0; // Pixel to act on.
 Color color(0, 0, 0); // Active color.
 uint32_t target_color = 0;
 
-const byte kColor_min = 0;
-const byte kColor_max = 64;
-
 byte last_r, last_g, last_b = 0;
 byte current_r, current_g, current_b = 0;
 byte target_r, target_g, target_b = 0;
@@ -138,9 +133,9 @@ byte SetStep(byte target, byte last) {
 
 uint32_t color_index = 0;
 uint32_t colors[][3] = {{0, 0, 0},
-                        {64, 0, 0},
+                        {96, 0, 0},
                         {48, 16, 0},
-                        {0, 0, 64}};
+                        {0, 0, 96}};
 
 void pickNextColor() {
   last_r = current_r;
@@ -241,11 +236,19 @@ void loop() {
 int main(void) {
   initscr();
   start_color();
-  std::cout << "max colors: " << COLORS << std::endl;
-  std::cout << "max pairs: " << COLOR_PAIRS << std::endl;
+  printw("max colors: %d\n", COLORS);
+  printw("max pairs: %d\n", COLOR_PAIRS);
+  if (!can_change_color()) {
+    printw("Can't change colors!\n");
+    return 1;
+  }
   setup();
+
+  int count = 0;
   do {
     loop();
     usleep(1 * 1000);
-  } while (true);
+    count++;
+  } while (true); // count++ < 1000);
+  endwin();
 }
