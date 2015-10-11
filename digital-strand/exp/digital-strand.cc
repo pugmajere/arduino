@@ -3,6 +3,7 @@
 #include <vector>
 #include <curses.h>
 #include <iostream>
+#include <cassert>
 
 typedef uint8_t byte;
 
@@ -17,15 +18,65 @@ int nLEDs = 32;
 int dataPin  = 2;
 int clockPin = 3;
 
+byte MoveToTarget(byte current, byte target, byte step) {
+  bool greater = (current > target);
+  byte future = (current + step);
+
+  if (greater) {
+    if (future > current || current < target) {
+      future = target;
+    }
+  } else {
+    if (future < current || future > target) {
+      future = target;
+    }
+  }
+  return future;
+}
+
+byte SetStep(byte target, byte last) {
+  byte step = (target - last) / 5;
+  if (step == 0) {
+    if (target > last) {
+      step = 1;
+    } else {
+      step = -1;
+    }
+  }
+  return step;
+}
+
+// The sequence of colors the LEDs move through.
+enum kColor_Names {RED, GREEN, BLUE};
+uint32_t color_index = 0;
+uint32_t colors[][3] = {{64, 0, 0},
+                        {64, 32, 0},
+                        {64, 64, 0},
+                        {0,  64, 0},
+                        {0,   0, 64},
+                        {19,  0, 32},
+                        {36,  0, 64},
+};
+const uint32_t kNumColors = 7;
+
 class Color {
 public:
   Color():
-    red_(0), green_(0), blue_(0) {};
+    red_(0), green_(0), blue_(0), index_(0) {
+    SetTarget(index_);
+  };
 
   Color(byte red, byte green, byte blue):
     red_(red),
     green_(green),
-    blue_(blue) {
+    blue_(blue),
+    index_(0),
+    step_red_(0),
+    step_green_(0),
+    step_blue_(0),
+    target_red_(red),
+    target_green_(green),
+    target_blue_(blue) {
   };
 
   void SetColorPair(short colornum) {
@@ -33,20 +84,65 @@ public:
     init_pair(colornum, colornum, 0);
   }
 
+  void StepColor() {
+    SetIntermediateColor();
+    if (AtTarget()) {
+      PickNextColor();
+    };
+  }
+
+  void SetTarget(uint32_t index) {
+    target_red_ = colors[index][RED];
+    target_green_ = colors[index][GREEN];
+    target_blue_ = colors[index][BLUE];
+
+    step_red_ = SetStep(target_red_, red_);
+    step_green_ = SetStep(target_green_, green_);
+    step_blue_ = SetStep(target_blue_, blue_);
+
+    index_ = index;
+  };
+
 private:
+  void  SetIntermediateColor() {
+    red_ = MoveToTarget(red_, target_red_, step_red_);
+    green_ = MoveToTarget(green_, target_green_, step_green_);
+    blue_ = MoveToTarget(blue_, target_blue_, step_blue_);
+  };
+
+  void PickNextColor() {
+    SetTarget((index_ + 1) ^ kNumColors);
+  }
+
+  bool AtTarget() {
+    return (red_ == target_red_
+            && green_ == target_green_
+            && blue_ == target_blue_);
+  };
+
   byte red_;
   byte green_;
   byte blue_;
+  uint32_t index_;
+  byte step_red_;
+  byte step_green_;
+  byte step_blue_;
+  byte target_red_;
+  byte target_green_;
+  byte target_blue_;
 };
 
 
 class Strip {
 public:
   Strip(byte size):
-  size_(size), pixels_(size) {};
-
-  static uint32_t Color(byte r, byte g, byte b) {
-    return Color(r, g, b);
+  size_(size), pixels_(size) {
+    for (int i = 0; i < size; i++) {
+      pixels_[i] = Color(colors[i % kNumColors][RED],
+                         colors[i % kNumColors][BLUE],
+                         colors[i % kNumColors][GREEN]);
+      pixels_[i].SetTarget((i + 1) % kNumColors);
+    }
   };
 
   byte numPixels() {
@@ -56,6 +152,12 @@ public:
   void setPixelColor(const byte& pixel, const class Color& color) {
     pixels_[pixel] = color;
   };
+
+  void StepColor(const byte& pixel) {
+    assert(pixel < pixels_.size());
+    pixels_[pixel].StepColor();
+  }
+
 
   void begin() {};
   void show() {
@@ -119,54 +221,20 @@ byte current_r, current_g, current_b = 0;
 byte target_r, target_g, target_b = 0;
 byte step_r, step_g, step_b = 0;
 
-byte SetStep(byte target, byte last) {
-  byte step = (target - last) / 16;
-  if (step == 0) {
-    if (target > last) {
-      step = 1;
-    } else {
-      step = -1;
-    }
-  }
-  return step;
-}
-
-uint32_t color_index = 0;
-uint32_t colors[][3] = {{0, 0, 0},
-                        {96, 0, 0},
-                        {48, 16, 0},
-                        {0, 0, 96}};
-
 void pickNextColor() {
   last_r = current_r;
   last_g = current_g;
   last_b = current_b;
 
-  color_index = (color_index + 1) % 4;
+  color_index = (color_index + 1) % kNumColors;
 
-  target_r = colors[color_index][0];
-  target_g = colors[color_index][1];
-  target_b = colors[color_index][2];
+  target_r = colors[color_index][RED];
+  target_g = colors[color_index][GREEN];
+  target_b = colors[color_index][BLUE];
 
   step_r = SetStep(target_r, last_r);
   step_g = SetStep(target_g, last_g);
   step_b = SetStep(target_b, last_b);
-}
-
-byte MoveToTarget(byte current, byte target, byte step) {
-  bool greater = (current > target);
-  byte future = (current + step);
-
-  if (greater) {
-    if (future > current || current < target) {
-      future = target;
-    }
-  } else {
-    if (future < current || future > target) {
-      future = target;
-    }
-  }
-  return future;
 }
 
 Color GetIntermediateColor() {
@@ -218,17 +286,12 @@ void loop() {
   // Adjust the light strip.
   if (currentMillis - strip_last_change_millis > strip_interval) {
     strip_last_change_millis = currentMillis;
-    strip.setPixelColor(pixel, color);
+    strip.StepColor(pixel);
     strip.show();
 
     pixel += 1;
     if (pixel == strip.numPixels()) {
       pixel = 0;
-      color = GetIntermediateColor();
-
-      if (CheckAtTarget()) {
-        pickNextColor();
-      }
     }
   }
 }
