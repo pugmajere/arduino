@@ -45,7 +45,7 @@ byte MoveToTarget(byte current, byte target, byte step) {
 }
 
 byte SetStep(byte target, byte last) {
-  byte step = (target - last) / 5;
+  byte step = (target - last) / 16;
   if (step == 0) {
     if (target > last) {
       step = 1;
