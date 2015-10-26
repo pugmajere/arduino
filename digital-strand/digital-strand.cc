@@ -126,7 +126,7 @@ private:
   };
 
   void PickNextColor() {
-    SetTarget((index_ + 1) ^ kNumColors);
+    SetTarget((index_ + 1) % kNumColors);
   }
 
   bool AtTarget() {
