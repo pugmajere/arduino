@@ -60,7 +60,7 @@ byte SetStep(byte target, byte last) {
 enum kColor_Names {RED, GREEN, BLUE};
 uint32_t color_index = 0;
 uint32_t colors[][3] = {{64, 0, 0},
-                        {64, 32, 0},
+                        {64, 0, 64},
                         {64, 64, 0},
                         {0,  64, 0},
                         {0,   0, 64},
