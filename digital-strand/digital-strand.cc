@@ -193,6 +193,7 @@ public:
   virtual void begin() {
     strip_.begin();
   };
+
   virtual void show() {
     for (unsigned int i = 0; i < size_; i++) {
       SetPixelColor(i);
