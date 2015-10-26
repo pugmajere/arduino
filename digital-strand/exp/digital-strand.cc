@@ -1,9 +1,16 @@
-#include <unistd.h>
+#ifdef ARDUINO
+#  include "LPD8806.h"
+#  include "SPI.h" // Comment out this line if using Trinket or Gemma
+#  ifdef __AVR_ATtiny85__
+#    include <avr/power.h>
+#  endif
+#else
+#  include <unistd.h>
+#  include <curses.h>
+#  include <iostream>
+#endif
+
 #include <stdint.h>
-#include <vector>
-#include <curses.h>
-#include <iostream>
-#include <cassert>
 
 typedef uint8_t byte;
 
@@ -12,11 +19,14 @@ typedef uint8_t byte;
 /*****************************************************************************/
 
 // Number of RGB LEDs in strand:
+#define nLEDS 32
+
 int nLEDs = 32;
 
 // Chose 2 pins for output; can be any valid output pins:
 int dataPin  = 2;
 int clockPin = 3;
+
 
 byte MoveToTarget(byte current, byte target, byte step) {
   bool greater = (current > target);
@@ -79,11 +89,16 @@ public:
     target_blue_(blue) {
   };
 
-  void SetColorPair(short colornum) {
-    init_color(colornum, red_ * 10, green_ * 10, blue_ * 10);
-    init_pair(colornum, colornum, 0);
-  }
-
+  byte GetRed() {
+    return red_;
+  };
+  byte GetGreen() {
+    return green_;
+  };
+  byte GetBlue() {
+    return blue_;
+  };
+  
   void StepColor() {
     SetIntermediateColor();
     if (AtTarget()) {
@@ -136,7 +151,7 @@ private:
 class Strip {
 public:
   Strip(byte size):
-  size_(size), pixels_(size) {
+  size_(size) {
     for (int i = 0; i < size; i++) {
       pixels_[i] = Color(colors[i % kNumColors][RED],
                          colors[i % kNumColors][BLUE],
@@ -154,32 +169,81 @@ public:
   };
 
   void StepColor(const byte& pixel) {
-    assert(pixel < pixels_.size());
     pixels_[pixel].StepColor();
   }
 
 
-  void begin() {};
-  void show() {
-    for (unsigned int i = 0; i < pixels_.size(); i++) {
-      unsigned int pair = i + 32; // static offset.
-      pixels_[i].SetColorPair(pair);
-      mvwaddch(stdscr, 5, 10 + i, int('#' + i) | COLOR_PAIR(pair));
-      
+  virtual void begin() = 0;
+  virtual void show() = 0;
+
+protected:
+  byte size_;
+  class Color pixels_[nLEDS];
+
+};
+
+#ifdef ARDUINO
+class ArduinoStrip: public Strip {
+public:
+  ArduinoStrip(byte size):
+    Strip(size) {
+    strip_ = LPD8806(nLEDs, dataPin, clockPin);
+  };
+
+  virtual void begin() {};
+  virtual void show() {
+    for (unsigned int i = 0; i < size_; i++) {
+      SetPixelColor(i);
     }
-    wrefresh(stdscr);
-    
+    strip_.show();
   };
 
 private:
-  byte size_;
-  std::vector<class Color> pixels_;
+  void SetPixelColor(short pixel) {
+    strip_.setPixelColor(pixel, strip_.Color(pixels_[pixel].GetRed(),
+                                             pixels_[pixel].GetGreen(),
+                                             pixels_[pixel].GetBlue()));
+  };
+    
 
+  // First parameter is the number of LEDs in the strand.  The LED strips
+  // are 32 LEDs per meter but you can extend or cut the strip.  Next two
+  // parameters are SPI data and clock pins:
+  LPD8806 strip_;
+  
 };
-Strip strip(nLEDs);
 
-enum State {LOW, HIGH};
-enum PinState {INPUT, OUTPUT};
+#else
+
+class NcursesStrip: public Strip {
+public:
+  NcursesStrip(byte size):
+    Strip(size)
+  {};
+  virtual void begin() {};
+  virtual void show() {
+    for (unsigned int i = 0; i < size_; i++) {
+      SetPixelColor(i);
+      
+    }
+    wrefresh(stdscr);
+  };
+private:
+  void SetPixelColor(short pixel) {
+    unsigned int pair = pixel + 32; // static offset.
+    
+    byte red = pixels_[pixel].GetRed();
+    byte green = pixels_[pixel].GetGreen();
+    byte blue = pixels_[pixel].GetBlue();
+    
+    init_color(pixel, red * 10, green * 10, blue * 10);
+    init_pair(pixel, pixel, 0);
+    mvwaddch(stdscr, 5, 10 + pixel, int('#' + pixel) | COLOR_PAIR(pair));
+  };
+};
+#endif
+
+Strip *mystrip = NULL;
 
 // You can optionally use hardware SPI for faster writes, just leave out
 // the data and clock pin parameters.  But this does limit use to very
@@ -196,7 +260,6 @@ enum PinState {INPUT, OUTPUT};
 const int ledPin =  13;      // the number of the LED pin
 
 // Variables will change:
-int ledState = LOW;             // ledState used to set the LED
 unsigned long previousMillis = 0;        // will store last time LED was updated
 
 // the follow variables is a long because the time, measured in miliseconds,
@@ -209,7 +272,7 @@ bool interval_decreasing = true;
 long interval_factor = 2;
 
 // State for the strip:
-unsigned long strip_interval = 10; // Time between LED activations.
+unsigned long strip_interval = 5; // Time between LED activations.
 unsigned long strip_last_change_millis = 0;
 uint32_t pixel = 0; // Pixel to act on.
 
@@ -250,17 +313,31 @@ bool CheckAtTarget() {
           && current_g == target_g
           && current_b == target_b);
 }
+
+Strip* CreateStrip(byte num_leds) {
+# ifdef ARDUINO
+  return new ArduinoStrip(num_leds);
+# else
+  return new NcursesStrip(num_leds);
+# endif
+}
  
 
 void setup() {
 #if defined(__AVR_ATtiny85__) && (F_CPU == 16000000L)
   clock_prescale_set(clock_div_1); // Enable 16 MHz on Trinket
 #endif
+  
+#ifdef ARDUINO
+  pinMode(ledPin, OUTPUT);
+#endif
+
+  mystrip = CreateStrip(nLEDS);
 
   // Start up the LED strip
-  strip.begin();
+  mystrip->begin();
   // Update the strip, to start they are all 'off'
-  strip.show();
+  mystrip->show();
 
   pickNextColor();
   color = GetIntermediateColor();
@@ -268,12 +345,14 @@ void setup() {
   pixel = 0;
 }
 
+#ifndef ARDUINO
 long millis() {
   static long now = 0;
   long ret = now;
   now += strip_interval;
   return ret;
 }
+#endif
 
 
 void loop() {
@@ -286,16 +365,17 @@ void loop() {
   // Adjust the light strip.
   if (currentMillis - strip_last_change_millis > strip_interval) {
     strip_last_change_millis = currentMillis;
-    strip.StepColor(pixel);
-    strip.show();
+    mystrip->StepColor(pixel);
+    mystrip->show();
 
     pixel += 1;
-    if (pixel == strip.numPixels()) {
+    if (pixel == mystrip->numPixels()) {
       pixel = 0;
     }
   }
 }
 
+#ifndef ARDUINO
 int main(void) {
   initscr();
   start_color();
@@ -303,6 +383,8 @@ int main(void) {
   printw("max pairs: %d\n", COLOR_PAIRS);
   if (!can_change_color()) {
     printw("Can't change colors!\n");
+    puts("Can't change colors!");
+    endwin();
     return 1;
   }
   setup();
@@ -314,4 +396,6 @@ int main(void) {
     count++;
   } while (true); // count++ < 1000);
   endwin();
+  return 0;
 }
+#endif
