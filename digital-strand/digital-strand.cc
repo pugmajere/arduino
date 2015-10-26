@@ -253,20 +253,6 @@ private:
 
 Strip *mystrip = NULL;
 
-// You can optionally use hardware SPI for faster writes, just leave out
-// the data and clock pin parameters.  But this does limit use to very
-// specific pins on the Arduino.  For "classic" Arduinos (Uno, Duemilanove,
-// etc.), data = pin 11, clock = pin 13.  For Arduino Mega, data = pin 51,
-// clock = pin 52.  For 32u4 Breakout Board+ and Teensy, data = pin B2,
-// clock = pin B1.  For Leonardo, this can ONLY be done on the ICSP pins.
-//LPD8806 strip = LPD8806(nLEDs);
-
-
-// For blinking the status LED:
-// constants won't change. Used here to 
-// set pin numbers:
-const int ledPin =  13;      // the number of the LED pin
-
 // Variables will change:
 unsigned long previousMillis = 0;        // will store last time LED was updated
 
