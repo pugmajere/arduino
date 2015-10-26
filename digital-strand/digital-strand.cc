@@ -45,7 +45,7 @@ byte MoveToTarget(byte current, byte target, byte step) {
 }
 
 byte SetStep(byte target, byte last) {
-  byte step = (target - last) / 8;
+  byte step = (target - last) / 16;
   if (step == 0) {
     if (target > last) {
       step = 1;
@@ -270,7 +270,7 @@ bool interval_decreasing = true;
 long interval_factor = 2;
 
 // State for the strip:
-unsigned long strip_interval = 10; // Time between LED activations.
+unsigned long strip_interval = 5; // Time between LED activations.
 unsigned long strip_last_change_millis = 0;
 uint32_t pixel = 0; // Pixel to act on.
 
