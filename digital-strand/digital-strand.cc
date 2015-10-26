@@ -223,7 +223,9 @@ public:
   NcursesStrip(byte size):
     Strip(size)
   {};
+
   virtual void begin() {};
+
   virtual void show() {
     for (unsigned int i = 0; i < size_; i++) {
       SetPixelColor(i);
@@ -246,7 +248,7 @@ private:
     init_pair(pair, pair, COLOR_BLACK);
 
     // Write a character:
-    mvwaddch(stdscr, 5, 10 + pixel, int('#' + pixel) | COLOR_PAIR(pair));
+    mvwaddch(stdscr, 5, 10 + pixel, '#' | COLOR_PAIR(pair));
   };
 };
 #endif
@@ -342,6 +344,9 @@ int main(void) {
     endwin();
     return 1;
   }
+  use_default_colors();
+  init_pair(128, COLOR_WHITE, COLOR_BLACK);
+  bkgd(COLOR_PAIR(128));
   printw("max colors: %d\n", COLORS);
   printw("max pairs: %d\n", COLOR_PAIRS);
   usleep(1000 * 1000);
@@ -352,7 +357,7 @@ int main(void) {
     loop();
     usleep(10 * 1000);
     count++;
-  } while (count++ < 1000); //true); // count++ < 1000);
+  } while (count++ < 10000); //true); // count++ < 1000);
   endwin();
   printf("max colors: %d\n", COLORS);
   printf("max pairs: %d\n", COLOR_PAIRS);
