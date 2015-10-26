@@ -278,36 +278,6 @@ byte current_r, current_g, current_b = 0;
 byte target_r, target_g, target_b = 0;
 byte step_r, step_g, step_b = 0;
 
-void pickNextColor() {
-  last_r = current_r;
-  last_g = current_g;
-  last_b = current_b;
-
-  color_index = (color_index + 1) % kNumColors;
-
-  target_r = colors[color_index][RED];
-  target_g = colors[color_index][GREEN];
-  target_b = colors[color_index][BLUE];
-
-  step_r = SetStep(target_r, last_r);
-  step_g = SetStep(target_g, last_g);
-  step_b = SetStep(target_b, last_b);
-}
-
-Color GetIntermediateColor() {
-  current_r = MoveToTarget(current_r, target_r, step_r);
-  current_g = MoveToTarget(current_g, target_g, step_g);
-  current_b = MoveToTarget(current_b, target_b, step_b);
-
-  return Color(current_r, current_g, current_b);
-}
-
-bool CheckAtTarget() {
-  return (current_r == target_r
-          && current_g == target_g
-          && current_b == target_b);
-}
-
 Strip* CreateStrip(byte num_leds) {
 # ifdef ARDUINO
   return new ArduinoStrip(num_leds);
@@ -315,27 +285,20 @@ Strip* CreateStrip(byte num_leds) {
   return new NcursesStrip(num_leds);
 # endif
 }
- 
 
 void setup() {
 #if defined(__AVR_ATtiny85__) && (F_CPU == 16000000L)
   clock_prescale_set(clock_div_1); // Enable 16 MHz on Trinket
 #endif
   
-#ifdef ARDUINO
-  pinMode(ledPin, OUTPUT);
-#endif
-
   mystrip = CreateStrip(nLEDS);
 
   // Start up the LED strip
   mystrip->begin();
+
   // Update the strip, to start they are all 'off'
   mystrip->show();
 
-  pickNextColor();
-  color = GetIntermediateColor();
-  
   pixel = 0;
 }
 
