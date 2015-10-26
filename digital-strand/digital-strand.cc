@@ -58,18 +58,80 @@ byte SetStep(byte target, byte last) {
 
 // The sequence of colors the LEDs move through.
 enum kColor_Names {RED, GREEN, BLUE};
-uint32_t color_index = 0;
-uint32_t colors[][3] = {
-  /*{64,  0,  0},
-    {64, 32,  0},
-    {64, 64,  0},
-    {0,  64,  0}, */
-  {64, 64, 64},
-  {0,   0, 64},
-  {19,  0, 32},
-  {36,  0, 64},
+
+
+class ColorTuple {
+public:
+  ColorTuple(byte red, byte green, byte blue):
+    red_(red), green_(green), blue_(blue) {
+  };
+  ColorTuple(): ColorTuple(0, 0, 0) {};
+
+  byte red_;
+  byte green_;
+  byte blue_;
 };
-const uint32_t kNumColors = 3;
+
+class ColorSeq {
+public:
+  ColorSeq():
+    max_colors_(0) {};
+
+  virtual ColorTuple GetNextColor(uint32_t index) {
+    return colors_[index % max_colors_];
+  };
+
+protected:
+  ColorTuple colors_[10];
+  byte max_colors_;
+};
+
+
+class BlueSeq : public ColorSeq {
+public:
+  BlueSeq(): ColorSeq() {
+    colors_[0] = ColorTuple(32, 32, 32);
+    colors_[1] = ColorTuple( 0,  0, 64);
+    colors_[2] = ColorTuple(19,  0, 32);
+    colors_[3] = ColorTuple(36,  0, 64);
+
+    max_colors_ = 4;
+  };
+};
+
+
+class RainbowSeq: public ColorSeq {
+public:
+  RainbowSeq(): ColorSeq() {
+    colors_[0] = ColorTuple(64,  0,  0);
+    colors_[1] = ColorTuple(64, 32,  0);
+    colors_[2] = ColorTuple(64, 64,  0);
+    colors_[3] = ColorTuple(0,  64,  0);
+    colors_[4] = ColorTuple(32, 32, 32);
+    colors_[5] = ColorTuple(0,   0, 64);
+    colors_[6] = ColorTuple(19,  0, 32);
+    colors_[7] = ColorTuple(36,  0, 64);
+
+    max_colors_ = 8;
+  };
+};
+
+
+class RedSeq: public ColorSeq {
+public:
+  RedSeq(): ColorSeq() {
+    colors_[0] = ColorTuple(64,  0,  0);
+    colors_[1] = ColorTuple(64, 32,  0);
+    colors_[2] = ColorTuple(64,  0,  0);
+    colors_[3] = ColorTuple(64, 64,  0);
+    colors_[4] = ColorTuple(64, 32,  0);
+
+    max_colors_ = 5;
+  };
+};
+
+
+ColorSeq sequence = BlueSeq();
 
 class Color {
 public:
@@ -77,6 +139,9 @@ public:
     red_(0), green_(0), blue_(0), index_(0) {
     SetTarget(index_);
   };
+
+  Color(ColorTuple tuple):
+    Color(tuple.red_, tuple.green_, tuple.blue_) {};
 
   Color(byte red, byte green, byte blue):
     red_(red),
@@ -109,9 +174,11 @@ public:
   }
 
   void SetTarget(uint32_t index) {
-    target_red_ = colors[index][RED];
-    target_green_ = colors[index][GREEN];
-    target_blue_ = colors[index][BLUE];
+    ColorTuple next = sequence.GetNextColor(index);
+
+    target_red_ = next.red_;
+    target_green_ = next.green_;
+    target_blue_ = next.blue_;
 
     step_red_ = SetStep(target_red_, red_);
     step_green_ = SetStep(target_green_, green_);
@@ -128,7 +195,7 @@ private:
   };
 
   void PickNextColor() {
-    SetTarget((index_ + 1) % kNumColors);
+    SetTarget(index_ + 1);
   }
 
   bool AtTarget() {
@@ -155,10 +222,8 @@ public:
   Strip(byte size):
   size_(size) {
     for (int i = 0; i < size; i++) {
-      pixels_[i] = Color(colors[i % kNumColors][RED],
-                         colors[i % kNumColors][BLUE],
-                         colors[i % kNumColors][GREEN]);
-      pixels_[i].SetTarget((i + 1) % kNumColors);
+      pixels_[i] = Color(sequence.GetNextColor(i));
+      pixels_[i].SetTarget(i + 1);
     }
   };
 
@@ -270,7 +335,7 @@ bool interval_decreasing = true;
 long interval_factor = 2;
 
 // State for the strip:
-unsigned long strip_interval = 5; // Time between LED activations.
+unsigned long strip_interval = 1; // Time between LED activations.
 unsigned long strip_last_change_millis = 0;
 uint32_t pixel = 0; // Pixel to act on.
 
@@ -315,6 +380,11 @@ long millis() {
 }
 #endif
 
+uint32_t iterations = 0;
+
+ColorSeq color_seq_seq[3] = {BlueSeq(), RedSeq(), RainbowSeq()};
+const uint32_t kIterationThreshold = 10000;
+const byte kColorSeqLen = 3;
 
 void loop() {
   // check to see if it's time to blink the LED; that is, if the 
@@ -332,6 +402,10 @@ void loop() {
     pixel += 1;
     if (pixel == mystrip->numPixels()) {
       pixel = 0;
+      iterations += 1;
+      if (iterations % kIterationThreshold == 0) {
+        sequence = color_seq_seq[(iterations / kIterationThreshold) % kColorSeqLen];
+      }
     }
   }
 }
