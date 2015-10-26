@@ -266,7 +266,7 @@ bool interval_decreasing = true;
 long interval_factor = 2;
 
 // State for the strip:
-unsigned long strip_interval = 5; // Time between LED activations.
+unsigned long strip_interval = 10; // Time between LED activations.
 unsigned long strip_last_change_millis = 0;
 uint32_t pixel = 0; // Pixel to act on.
 
@@ -336,23 +336,26 @@ void loop() {
 int main(void) {
   initscr();
   start_color();
-  printw("max colors: %d\n", COLORS);
-  printw("max pairs: %d\n", COLOR_PAIRS);
   if (!can_change_color()) {
     printw("Can't change colors!\n");
     puts("Can't change colors!");
     endwin();
     return 1;
   }
+  printw("max colors: %d\n", COLORS);
+  printw("max pairs: %d\n", COLOR_PAIRS);
+  usleep(1000 * 1000);
   setup();
 
   int count = 0;
   do {
     loop();
-    usleep(1 * 1000);
+    usleep(10 * 1000);
     count++;
-  } while (true); // count++ < 1000);
+  } while (count++ < 1000); //true); // count++ < 1000);
   endwin();
+  printf("max colors: %d\n", COLORS);
+  printf("max pairs: %d\n", COLOR_PAIRS);
   return 0;
 }
 #endif
