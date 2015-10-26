@@ -239,8 +239,13 @@ private:
     byte green = pixels_[pixel].GetGreen();
     byte blue = pixels_[pixel].GetBlue();
     
-    init_color(pixel, red * 10, green * 10, blue * 10);
-    init_pair(pixel, pixel, 0);
+    // Create colors starting at 32 (== pair):
+    init_color(pair, red * 10, green * 10, blue * 10);
+
+    // Assign it to a color pair:
+    init_pair(pair, pair, COLOR_BLACK);
+
+    // Write a character:
     mvwaddch(stdscr, 5, 10 + pixel, int('#' + pixel) | COLOR_PAIR(pair));
   };
 };
