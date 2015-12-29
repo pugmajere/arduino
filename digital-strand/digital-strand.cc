@@ -45,7 +45,7 @@ byte MoveToTarget(byte current, byte target, byte step) {
 }
 
 byte SetStep(byte target, byte last) {
-  byte step = (target - last) / 16;
+  byte step = (target - last) / 24;
   if (step == 0) {
     if (target > last) {
       step = 1;
@@ -55,10 +55,6 @@ byte SetStep(byte target, byte last) {
   }
   return step;
 }
-
-// The sequence of colors the LEDs move through.
-enum kColor_Names {RED, GREEN, BLUE};
-
 
 class ColorTuple {
 public:
@@ -120,18 +116,19 @@ public:
 class RedSeq: public ColorSeq {
 public:
   RedSeq(): ColorSeq() {
-    colors_[0] = ColorTuple(64,  0,  0);
-    colors_[1] = ColorTuple(64, 32,  0);
-    colors_[2] = ColorTuple(64,  0,  0);
-    colors_[3] = ColorTuple(64, 64,  0);
-    colors_[4] = ColorTuple(64, 32,  0);
+    colors_[0] = ColorTuple(48,  0,  0);
+    colors_[1] = ColorTuple(48, 16,  0);
+    colors_[2] = ColorTuple(48,  0,  0);
+    colors_[3] = ColorTuple(48, 20,  0);
+    colors_[4] = ColorTuple(48,  0,  0);
+    colors_[5] = ColorTuple(48,  8,  0);
 
-    max_colors_ = 5;
+    max_colors_ = 6;
   };
 };
 
 
-ColorSeq sequence = BlueSeq();
+ColorSeq sequence = RedSeq();
 
 class Color {
 public:
@@ -335,7 +332,7 @@ bool interval_decreasing = true;
 long interval_factor = 2;
 
 // State for the strip:
-unsigned long strip_interval = 1; // Time between LED activations.
+unsigned long strip_interval = 3; // Time between LED activations.
 unsigned long strip_last_change_millis = 0;
 uint32_t pixel = 0; // Pixel to act on.
 
