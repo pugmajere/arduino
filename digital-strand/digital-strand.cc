@@ -19,9 +19,11 @@ typedef uint8_t byte;
 /*****************************************************************************/
 
 // Number of RGB LEDs in strand:
-#define nLEDS 32
+#define nLEDS 56
 
-int nLEDs = 32;
+// Lower numbers mean faster transitions; 24 is really nice, 8 for
+// fast demo transitions.
+#define k_numSteps 24
 
 // Chose 2 pins for output; can be any valid output pins:
 int dataPin  = 2;
@@ -45,7 +47,7 @@ byte MoveToTarget(byte current, byte target, byte step) {
 }
 
 byte SetStep(byte target, byte last) {
-  byte step = (target - last) / 24;
+  byte step = (target - last) / k_numSteps;
   if (step == 0) {
     if (target > last) {
       step = 1;
@@ -251,7 +253,7 @@ class ArduinoStrip: public Strip {
 public:
   ArduinoStrip(byte size):
     Strip(size) {
-    strip_ = LPD8806(nLEDs, dataPin, clockPin);
+    strip_ = LPD8806(nLEDS, dataPin, clockPin);
   };
 
   virtual void begin() {
