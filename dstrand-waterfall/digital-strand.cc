@@ -21,8 +21,6 @@ typedef uint8_t byte;
 // Number of RGB LEDs in strand:
 #define nLEDS 32
 
-int nLEDs = 32;
-
 // Chose 2 pins for output; can be any valid output pins:
 int dataPin  = 2;
 int clockPin = 3;
@@ -383,6 +381,20 @@ ColorSeq color_seq_seq[3] = {BlueSeq(), RedSeq(), RainbowSeq()};
 const uint32_t kIterationThreshold = 10000;
 const byte kColorSeqLen = 3;
 
+
+/* Setting up the waterfall:
+ *
+ * Goal: Fill the strip with one color, after "dropping" colors from
+ * one end to the other.
+ *
+ * Each drop should start on a consistent interval (so it shouldn't
+ * get faster as the strip fills up).
+ */
+onst int kStartDropInterval = 1000; // milliseconds.
+const int kPixelChangeInterval = kStartDropInterval / nLEDS;
+
+
+
 void loop() {
   // check to see if it's time to blink the LED; that is, if the 
   // difference between the current time and last time you blinked 
@@ -428,8 +440,7 @@ int main(void) {
   int count = 0;
   do {
     loop();
-    usleep(10 * 1000);
-    count++;
+    usleep(1000);
   } while (count++ < 10000); //true); // count++ < 1000);
   endwin();
   printf("max colors: %d\n", COLORS);
