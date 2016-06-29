@@ -25,6 +25,9 @@ typedef uint8_t byte;
 // fast demo transitions.
 #define k_numSteps 24
 
+// Scale applied to colors.
+const unsigned int kStripScale = 1;
+
 // Chose 2 pins for output; can be any valid output pins:
 int dataPin  = 2;
 int clockPin = 3;
@@ -129,7 +132,7 @@ public:
   };
 };
 
-
+// Replaced later.
 ColorSeq sequence = RedSeq();
 
 class Color {
@@ -269,9 +272,10 @@ public:
 
 private:
   void SetPixelColor(short pixel) {
-    strip_.setPixelColor(pixel, strip_.Color(pixels_[pixel].GetRed(),
-                                             pixels_[pixel].GetGreen(),
-                                             pixels_[pixel].GetBlue()));
+    strip_.setPixelColor(pixel,
+                         strip_.Color(pixels_[pixel].GetRed() * kStripScale,
+                                      pixels_[pixel].GetGreen() * kStripScale,
+                                      pixels_[pixel].GetBlue() * kStripScale));
   };
     
 
@@ -354,6 +358,11 @@ Strip* CreateStrip(byte num_leds) {
 # endif
 }
 
+ColorSeq color_seq_seq[3] = {RainbowSeq(), RedSeq(), BlueSeq()};
+const uint32_t kIterationThreshold = 10000;
+const byte kColorSeqLen = 3;
+uint32_t iterations = 0;
+
 void setup() {
 #if defined(__AVR_ATtiny85__) && (F_CPU == 16000000L)
   clock_prescale_set(clock_div_1); // Enable 16 MHz on Trinket
@@ -368,6 +377,7 @@ void setup() {
   mystrip->show();
 
   pixel = 0;
+  sequence = color_seq_seq[0];
 }
 
 #ifndef ARDUINO
@@ -379,11 +389,6 @@ long millis() {
 }
 #endif
 
-uint32_t iterations = 0;
-
-ColorSeq color_seq_seq[3] = {BlueSeq(), RedSeq(), RainbowSeq()};
-const uint32_t kIterationThreshold = 10000;
-const byte kColorSeqLen = 3;
 
 void loop() {
   // check to see if it's time to blink the LED; that is, if the 
