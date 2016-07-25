@@ -372,7 +372,9 @@ void setup() {
 #if defined(__AVR_ATtiny85__) && (F_CPU == 16000000L)
   clock_prescale_set(clock_div_1); // Enable 16 MHz on Trinket
 #endif
-  
+
+  sequence = color_seq_seq[0];
+
   mystrip = CreateStrip(nLEDS);
 
   // Start up the LED strip
@@ -382,7 +384,6 @@ void setup() {
   mystrip->show();
 
   pixel = 0;
-  sequence = color_seq_seq[0];
 }
 
 #ifndef ARDUINO
