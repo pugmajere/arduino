@@ -19,7 +19,11 @@ typedef uint8_t byte;
 /*****************************************************************************/
 
 // Number of RGB LEDs in strand:
-#define nLEDS 56
+// #define nLEDS 56
+#define nLEDS 44
+#define nSTRIPS 4
+#define kSwapBlueGreen true
+
 
 // Lower numbers mean faster transitions; 24 is really nice, 8 for
 // fast demo transitions.
@@ -261,7 +265,7 @@ class ArduinoStrip: public Strip {
 public:
   ArduinoStrip(byte size):
     Strip(size) {
-    strip_ = LPD8806(nLEDS, dataPin, clockPin);
+    strip_ = LPD8806(nLEDS * nSTRIPS, dataPin, clockPin);
   };
 
   virtual void begin() {
@@ -277,10 +281,19 @@ public:
 
 private:
   void SetPixelColor(short pixel) {
-    strip_.setPixelColor(pixel,
-                         strip_.Color(pixels_[pixel].GetRed() * kStripScale,
-                                      pixels_[pixel].GetGreen() * kStripScale,
-                                      pixels_[pixel].GetBlue() * kStripScale));
+    for (int i = 0; i < nSTRIPS; i++) {
+      byte red = pixels_[pixel].GetRed() * kStripScale;
+      byte blue = pixels_[pixel].GetBlue() * kStripScale;
+      byte green = pixels_[pixel].GetGreen() * kStripScale;
+
+      if (kSwapBlueGreen) {
+        strip_.setPixelColor(pixel + (nLEDS * i),
+                             strip_.Color(red, blue, green));
+      } else {
+        strip_.setPixelColor(pixel + (nLEDS * i),
+                             strip_.Color(red, green, blue));
+      }
+    }
   };
     
 
@@ -343,7 +356,7 @@ bool interval_decreasing = true;
 long interval_factor = 2;
 
 // State for the strip:
-unsigned long strip_interval = 3; // Time between LED activations.
+unsigned long strip_interval = 1; // Time between LED activations.
 unsigned long strip_last_change_millis = 0;
 uint32_t pixel = 0; // Pixel to act on.
 
