@@ -98,10 +98,10 @@ protected:
 class BlueSeq : public ColorSeq {
 public:
   BlueSeq(): ColorSeq() {
-    colors_[0] = ColorTuple(32, 32, 32);
-    colors_[1] = ColorTuple( 0,  0, 64);
-    colors_[2] = ColorTuple(19,  0, 32);
-    colors_[3] = ColorTuple(36,  0, 64);
+    colors_[0] = ColorTuple( 0,  0, 64);
+    colors_[1] = ColorTuple( 0, 32, 32);
+    colors_[2] = ColorTuple( 16,  0, 32);
+    colors_[3] = ColorTuple( 0,  24,  16);
 
     max_colors_ = 4;
   };
