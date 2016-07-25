@@ -83,6 +83,13 @@ public:
   };
 
 protected:
+  void AddColor(ColorTuple color) {
+    if (max_colors_ < 10) {
+      colors_[max_colors_] = color;
+      max_colors_++;
+    }
+  }
+
   ColorTuple colors_[10];
   byte max_colors_;
 };
@@ -121,19 +128,17 @@ public:
 class RedSeq: public ColorSeq {
 public:
   RedSeq(): ColorSeq() {
-    colors_[0] = ColorTuple(48,  0,  0);
-    colors_[1] = ColorTuple(48, 16,  0);
-    colors_[2] = ColorTuple(48,  0,  0);
-    colors_[3] = ColorTuple(48, 20,  0);
-    colors_[4] = ColorTuple(48,  0,  0);
-    colors_[5] = ColorTuple(48,  8,  0);
-
-    max_colors_ = 6;
+    AddColor(ColorTuple(64,  0,  0));
+    AddColor(ColorTuple(32,  0,  0));
+    AddColor(ColorTuple(64, 20,  0));
+    AddColor(ColorTuple(64,  0,  0));
+    AddColor(ColorTuple(64, 10,  0));
+    AddColor(ColorTuple(32,  0,  0));
   };
 };
 
 // Replaced later.
-ColorSeq sequence = RedSeq();
+ColorSeq sequence = BlueSeq();
 
 class Color {
 public:
