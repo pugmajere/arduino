@@ -27,7 +27,7 @@ typedef uint8_t byte;
 
 // Lower numbers mean faster transitions; 24 is really nice, 8 for
 // fast demo transitions.
-#define k_numSteps 24
+#define k_numSteps 12
 
 // Scale applied to colors.
 const unsigned int kStripScale = 1;
