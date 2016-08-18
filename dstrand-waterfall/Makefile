@@ -1,5 +1,6 @@
 BOARD_TAG    = uno
 ARDUINO_LIBS = LPD8806 SPI
+ARDUINO_SKETCHBOOK = /home/ryan/Arduino
 
 include /usr/share/arduino/Arduino.mk
 

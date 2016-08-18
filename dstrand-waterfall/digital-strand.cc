@@ -19,7 +19,11 @@ typedef uint8_t byte;
 /*****************************************************************************/
 
 // Number of RGB LEDs in strand:
-#define nLEDS 32
+#define nLEDS 22
+#define nSTRIPS 8
+#define kSwapBlueGreen true
+#define kStripScale 1
+
 
 // Chose 2 pins for output; can be any valid output pins:
 int dataPin  = 2;
@@ -249,7 +253,8 @@ class ArduinoStrip: public Strip {
 public:
   ArduinoStrip(byte size):
     Strip(size) {
-    strip_ = LPD8806(nLEDs, dataPin, clockPin);
+    strip_ = LPD8806(nLEDS * nSTRIPS, dataPin, clockPin);
+
   };
 
   virtual void begin() {
@@ -265,11 +270,20 @@ public:
 
 private:
   void SetPixelColor(short pixel) {
-    strip_.setPixelColor(pixel, strip_.Color(pixels_[pixel].GetRed(),
-                                             pixels_[pixel].GetGreen(),
-                                             pixels_[pixel].GetBlue()));
+    for (int i = 0; i < nSTRIPS; i++) {
+      byte red = pixels_[pixel].GetRed() * kStripScale;
+      byte blue = pixels_[pixel].GetBlue() * kStripScale;
+      byte green = pixels_[pixel].GetGreen() * kStripScale;
+
+      if (kSwapBlueGreen) {
+        strip_.setPixelColor(pixel + (nLEDS * i),
+                             strip_.Color(red, blue, green));
+      } else {
+        strip_.setPixelColor(pixel + (nLEDS * i),
+                             strip_.Color(red, green, blue));
+      }
+    }
   };
-    
 
   // First parameter is the number of LEDs in the strand.  The LED strips
   // are 32 LEDs per meter but you can extend or cut the strip.  Next two
@@ -381,42 +395,133 @@ ColorSeq color_seq_seq[3] = {BlueSeq(), RedSeq(), RainbowSeq()};
 const uint32_t kIterationThreshold = 10000;
 const byte kColorSeqLen = 3;
 
+//Input a value 0 to 384 to get a color value.
+//The colours are a transition r - g -b - back to r
 
-/* Setting up the waterfall:
- *
- * Goal: Fill the strip with one color, after "dropping" colors from
- * one end to the other.
- *
- * Each drop should start on a consistent interval (so it shouldn't
- * get faster as the strip fills up).
- */
-onst int kStartDropInterval = 1000; // milliseconds.
-const int kPixelChangeInterval = kStartDropInterval / nLEDS;
+Color Wheel(uint16_t WheelPos)
+{
+  byte r, g, b;
+  switch(WheelPos / 128)
+  {
+    case 0:
+      r = 127 - WheelPos % 128;   //Red down
+      g = WheelPos % 128;      // Green up
+      b = 0;                  //blue off
+      break; 
+    case 1:
+      g = 127 - WheelPos % 128;  //green down
+      b = WheelPos % 128;      //blue up
+      r = 0;                  //red off
+      break; 
+    case 2:
+      b = 127 - WheelPos % 128;  //blue down 
+      r = WheelPos % 128;      //red up
+      g = 0;                  //green off
+      break; 
+  }
+  return(Color(ColorTuple(r,g,b)));
+}
+
+// Slightly different, this one makes the rainbow wheel equally distributed 
+// along the chain
+void rainbowCycle() {
+  uint16_t i, j;
+  for (j=0; j < 384; j++) {     // 5 cycles of all 384 colors in the wheel
+
+    for (i=0; i < mystrip->numPixels(); i++) {
+      // tricky math! we use each pixel as a fraction of the full 384-color wheel
+      // (thats the i / strip.numPixels() part)
+      // Then add in j which makes the colors go around per pixel
+      // the % 384 is to make the wheel cycle around
+      mystrip->setPixelColor(i, Wheel( ((i * 384 / mystrip->numPixels()) + j) % 384) );
+    }  
+    mystrip->show();   // write all the pixels out
+    delay(1);
+  }
+}
+
+Color RedYellowWheel(uint16_t WheelPos) {
+  byte r, g, b;
+  switch(WheelPos / 64)
+  {
+    case 0:
+      r = 127 - WheelPos % 64;   //Red down
+      g = (WheelPos % 64) / 3;      // Green up
+      b = 0;                  //blue off
+      break; 
+    case 1:
+      g = (64 - WheelPos % 64) / 3;  //green down
+      r = 64 + WheelPos % 64;      //red up
+      b = 0;                  //blue off
+      break; 
+  }
+  return(Color(ColorTuple(r,g,b)));
+}
+
+void redYellowCycle() {
+  uint16_t i, j;
+  
+  for (j=0; j < 128; j++) {
+    for (i=0; i < mystrip->numPixels(); i++) {
+      mystrip->setPixelColor(i, RedYellowWheel(((i * 128 / mystrip->numPixels()) + j) % 128));
+    }
+    mystrip->show();
+    delay(4);
+  }
+}
+
+Color BlueWheel(uint16_t WheelPos) {
+  byte r, g, b;
+  switch(WheelPos / 64)
+  {
+    case 0:
+      b = 96 - WheelPos % 64;   //blue down
+      r = (WheelPos % 64) / 2;      // red up
+      g = 0;                  //blue off
+      break; 
+    case 1:
+      r = (64 - WheelPos % 64) / 2;  //red down
+      b = 32 + WheelPos % 64;      //blue up
+      g = 0;                  //green off
+      break; 
+  }
+  return(Color(ColorTuple(r,g,b)));
+}
+
+void blueCycle() {
+  uint16_t i, j;
+  
+  for (j=0; j < 128; j++) {
+    for (i=0; i < mystrip->numPixels(); i++) {
+      mystrip->setPixelColor(i, BlueWheel(((i * 128 / mystrip->numPixels()) + j) % 128));
+    }
+    mystrip->show();
+    delay(4);
+  }
+}
 
 
 
 void loop() {
-  // check to see if it's time to blink the LED; that is, if the 
-  // difference between the current time and last time you blinked 
-  // the LED is bigger than the interval at which you want to 
-  // blink the LED.
-  unsigned long currentMillis = millis();
- 
-  // Adjust the light strip.
-  if (currentMillis - strip_last_change_millis > strip_interval) {
-    strip_last_change_millis = currentMillis;
-    mystrip->StepColor(pixel);
-    mystrip->show();
-
-    pixel += 1;
-    if (pixel == mystrip->numPixels()) {
-      pixel = 0;
-      iterations += 1;
-      if (iterations % kIterationThreshold == 0) {
-        sequence = color_seq_seq[(iterations / kIterationThreshold) % kColorSeqLen];
-      }
-    }
+  switch((iterations / 30) % 3) {
+  case 0:
+    rainbowCycle();
+    break;
+  case 1:
+    // Runs in 1/3rd the time, so run it 3 times.
+    redYellowCycle();
+    redYellowCycle();
+    redYellowCycle();
+    break;
+  case 2:
+    // Runs in 1/3rd the time, so run it 3 times.
+    blueCycle();
+    blueCycle();
+    blueCycle();
+    break;
   }
+
+  iterations++;
 }
 
 #ifndef ARDUINO
