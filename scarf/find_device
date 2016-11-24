@@ -1,0 +1,5 @@
+#!/bin/bash
+
+lsusb | grep USBtiny | tr -d ':' | awk '{printf "usb:%s:%s\n", $2, $4}'
+
+
