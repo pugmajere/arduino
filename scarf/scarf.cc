@@ -1,15 +1,17 @@
 #include <FastLED.h>
 #include <avr/power.h>
 
-#define LED_PIN      1   // which pin your pixels are connected to
+#define LED_PIN     17   // which pin your pixels are connected to
 #define NUM_LEDS    20   // how many LEDs you have
 #define BRIGHTNESS 200   // 0-255, higher number is brighter. 
 #define SATURATION 255   // 0-255, 0 is pure white, 255 is fully saturated color
 #define SPEED       10   // How fast the colors move.  Higher numbers = faster motion
 #define STEPS        2   // How wide the bands of color are.  1 = more like a gradient, 10 = more like stripes
-#define BUTTON_PIN   2   // button is connected to pin 2 and GND
+#define BUTTON_PIN  15   // button is connected to pin 15 and GND
 
 #define COLOR_ORDER GRB  // Try mixing up the letters (RGB, GBR, BRG, etc) for a whole new world of color combinations
+
+#define INTERNAL_LED_PIN 13 // the on-board TeensyLC led
 
 CRGB leds[NUM_LEDS];
 CRGBPalette16 currentPalette;
@@ -67,26 +69,34 @@ void shortKeyPress() {
 }
 
 void setup() {
-  // Enable 16Mhz mode:
-  if (F_CPU == 16000000)
-    clock_prescale_set(clock_div_1);
-  
-  delay( 2000 ); // power-up safety delay
+  #if 0
   FastLED.addLeds<WS2812, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
   FastLED.setBrightness(  BRIGHTNESS );
   currentBlending = LINEARBLEND;
+  #endif
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+
+  // 
+  pinMode(INTERNAL_LED_PIN, OUTPUT);
 }
 
 void loop() {
+  static int internal_led_mode = HIGH;
+  digitalWrite(INTERNAL_LED_PIN, internal_led_mode);
 
   byte currKeyState = digitalRead(BUTTON_PIN);
 
   if ((prevKeyState == LOW) && (currKeyState == HIGH)) {
     shortKeyPress();
+    if (internal_led_mode == LOW) {
+      internal_led_mode = HIGH;
+    } else {
+      internal_led_mode = LOW;
+    }
   }
   prevKeyState = currKeyState;
 
+  #if 0
   static uint8_t startIndex = 0;
   startIndex = startIndex + 1; /* motion speed */
 
@@ -117,5 +127,6 @@ void loop() {
 
   FillLEDsFromPaletteColors( startIndex);
   FastLED.show();
-  FastLED.delay(1000 / SPEED);  
+  FastLED.delay(1000 / SPEED);
+  #endif
 }

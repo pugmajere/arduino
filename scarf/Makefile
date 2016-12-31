@@ -1,13 +1,6 @@
-BOARD_TAG    = trinket5
+BOARD_TAG    = teensyLC
 ARDUINO_LIBS = FastLED
-MONITOR_PORT = $(shell ./find_device)
-FORCE_MONITOR_PORT = 1
-ARDUINO_SKETCHBOOK = /home/ryan/Arduino
-ALTERNATE_CORE_PATH = /home/ryan/Arduino/hardware/attiny
+#ARDUINO_SKETCHBOOK = /home/ryan/arduino/arduino-1.6.12
+ARDUINO_DIR = /home/ryan/arduino/arduino-1.6.12
 
-AVRDUDE_ARD_PROGRAMMER = usbtiny
-AVRDUDE_ARD_BAUDRATE = 57600
-
-RESET_CMD = true
-
-include /home/ryan/src/Arduino-Makefile/Arduino.mk
+include /home/ryan/src/Arduino-Makefile/Teensy.mk
