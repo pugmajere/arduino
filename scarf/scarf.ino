@@ -2,7 +2,7 @@
 #include <avr/power.h>
 
 #define LED_PIN     17   // which pin your pixels are connected to
-#define NUM_LEDS    20   // how many LEDs you have
+#define NUM_LEDS    109   // how many LEDs you have
 #define BRIGHTNESS 200   // 0-255, higher number is brighter. 
 #define SATURATION 255   // 0-255, 0 is pure white, 255 is fully saturated color
 #define SPEED       10   // How fast the colors move.  Higher numbers = faster motion
@@ -69,14 +69,12 @@ void shortKeyPress() {
 }
 
 void setup() {
-  #if 0
   FastLED.addLeds<WS2812, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
   FastLED.setBrightness(  BRIGHTNESS );
   currentBlending = LINEARBLEND;
-  #endif
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
 
-  // 
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+ 
   pinMode(INTERNAL_LED_PIN, OUTPUT);
 }
 
@@ -96,7 +94,6 @@ void loop() {
   }
   prevKeyState = currKeyState;
 
-  #if 0
   static uint8_t startIndex = 0;
   startIndex = startIndex + 1; /* motion speed */
 
@@ -128,5 +125,4 @@ void loop() {
   FillLEDsFromPaletteColors( startIndex);
   FastLED.show();
   FastLED.delay(1000 / SPEED);
-  #endif
 }
