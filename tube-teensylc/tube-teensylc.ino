@@ -1,21 +1,8 @@
 #include "LPD8806.h"
 #include "SPI.h" // Comment out this line if using Trinket or Gemma
-#include <Adafruit_NeoPixel.h>
 #ifdef __AVR__
   #include <avr/power.h>
 #endif
-
-#define NEO_PIN 6
-
-// Parameter 1 = number of pixels in strip
-// Parameter 2 = Arduino pin number (most are valid)
-// Parameter 3 = pixel type flags, add together as needed:
-//   NEO_KHZ800  800 KHz bitstream (most NeoPixel products w/WS2812 LEDs)
-//   NEO_KHZ400  400 KHz (classic 'v1' (not v2) FLORA pixels, WS2811 drivers)
-//   NEO_GRB     Pixels are wired for GRB bitstream (most NeoPixel products)
-//   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
-//   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
-Adafruit_NeoPixel neo_strip = Adafruit_NeoPixel(50, NEO_PIN, NEO_RGB + NEO_KHZ800);
 
 #include <stdint.h>
 
@@ -33,8 +20,8 @@ typedef uint8_t byte;
 
 
 // Chose 2 pins for output; can be any valid output pins:
-int dataPin  = 2;
-int clockPin = 3;
+int dataPin  = 11;
+int clockPin = 13;
 
 
 class ColorTuple {
@@ -190,9 +177,6 @@ void setup() {
   // Update the strip, to start they are all 'off'
   mystrip->show();
 
-  neo_strip.begin();
-  neo_strip.show();
-
   pixel = 0;
 }
 
@@ -249,16 +233,6 @@ void rainbowCycle() {
     }  
     mystrip->show();   // write all the pixels out
 
-    for (i=0; i < neo_strip.numPixels(); i++) {
-      // tricky math! we use each pixel as a fraction of the full 384-color wheel
-      // (thats the i / strip.numPixels() part)
-      // Then add in j which makes the colors go around per pixel
-      // the % 384 is to make the wheel cycle around
-      Color color = Wheel( ((i * 384 / neo_strip.numPixels()) + j) % 384);
-      neo_strip.setPixelColor(i, color.GetRed(), color.GetGreen(), color.GetBlue());
-    }  
-    neo_strip.show();   // write all the pixels out
-
     delay(1);
   }
 }
@@ -290,11 +264,6 @@ void redYellowCycle() {
     }
     mystrip->show();
 
-    for (i=0; i < neo_strip.numPixels(); i++) {
-      Color color = RedYellowWheel(((i * 128 / neo_strip.numPixels()) + j) % 128);
-      neo_strip.setPixelColor(i, color.GetRed(), color.GetGreen(), color.GetBlue());
-    }
-    neo_strip.show();
     delay(4);
   }
 }
@@ -326,17 +295,9 @@ void blueCycle() {
     }
     mystrip->show();
 
-    for (i=0; i < neo_strip.numPixels(); i++) {
-      Color color = BlueWheel(((i * 128 / neo_strip.numPixels()) + j) % 128);
-      
-      neo_strip.setPixelColor(i, color.GetRed(), color.GetGreen(), color.GetBlue());
-    }
-    neo_strip.show();
-
     delay(4);
   }
 }
-
 
 
 void loop() {
