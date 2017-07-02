@@ -16,7 +16,7 @@ typedef uint8_t byte;
 #define nLEDS 22
 #define nSTRIPS 8
 #define kSwapBlueGreen true
-#define kStripScale 1
+#define kStripScale 0.5
 
 
 // Chose 2 pins for output; can be any valid output pins:
