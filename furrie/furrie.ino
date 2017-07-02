@@ -33,7 +33,19 @@
 int impulseThresholdBars[] = {0, 3, 3, 17}; // Decrease this to increase sensitivity
 
 // If you want to add some custom functionality, to this script, put it in this function
-void doSomeOtherNonsense() { return; }
+void doSomeOtherNonsense() {
+  static unsigned long last_millis = 0;
+  unsigned long current_millis = millis();
+  if (current_millis - last_millis < 10000) {
+    return;
+  }
+  // It's been a little while, change one of the strands:
+  int chan = (current_millis % 4);
+  glow[chan] = !glow[chan];
+
+  last_millis = current_millis;
+  return;
+}
 
 bool ENABLE_logOnTransition;
 void setup() {
